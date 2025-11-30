@@ -22,29 +22,48 @@ export const GameBoard: React.FC = () => {
 
   const [gameLoaded, setGameLoaded] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!gameId || !userId) return;
+    if (!userId) {
+      setErrorMsg("Missing User ID");
+      return;
+    }
+    if (!gameId) {
+      setErrorMsg("Missing Game ID");
+      return;
+    }
 
     // Load initial game state
     const loadGame = async () => {
       try {
+        console.log('Fetching game state for:', gameId);
         const state = await apiService.getGame(gameId);
+        console.log('Game state received:', state);
+
         dispatch(updateGameState(state));
+        console.log('Game state dispatched');
+
         setGameLoaded(true);
+        console.log('Game loaded set to true');
 
         // Connect WebSocket
         try {
           const token = localStorage.getItem('token');
           if (token) {
+            console.log('Connecting WebSocket...');
             await wsService.connect(gameId, token);
+            console.log('WebSocket connected');
 
             // Listen for game state updates
             wsService.on('GAME_STATE_UPDATE', (message) => {
+              console.log('WS: Game State Update', message.data);
               dispatch(updateGameState(message.data));
             });
 
             // Listen for phase changes
             wsService.on('PHASE_CHANGE', (message) => {
+              console.log('WS: Phase Change', message.data);
               // Update phase in game state
               if (gameState) {
                 const updated = { ...gameState, currentPhase: message.data };
@@ -55,8 +74,9 @@ export const GameBoard: React.FC = () => {
         } catch (wsError) {
           console.error('WebSocket connection error:', wsError);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to load game:', error);
+        setErrorMsg(`Failed to load game: ${error.message || 'Unknown error'}`);
       }
     };
 
@@ -94,8 +114,12 @@ export const GameBoard: React.FC = () => {
     dispatch(setWaitingForOpponent(!isActivePlayer));
   }, [gameState?.currentPhase, gameState?.currentPlayerIndex, userId, dispatch]);
 
+  if (errorMsg) {
+    return <div className="game-board error">{errorMsg}</div>;
+  }
+
   if (!gameLoaded || !gameState || !userId) {
-    return <div className="game-board loading">Loading game...</div>;
+    return <div className="game-board loading">Loading game... (ID: {gameId}, User: {userId})</div>;
   }
 
   const currentPlayer = gameState.players[userId];

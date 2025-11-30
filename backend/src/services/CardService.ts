@@ -341,7 +341,7 @@ export class CardService {
     for (const modifier of cardInstance.modifiers) {
       if (!modifier.isActive) continue;
 
-      if (modifier.type === 'STAT_BOOST') {
+      if (modifier.type === 'STAT_BOOST' || modifier.type === 'MODIFY_STAT') {
         if (modifier.stat === 'ATK') atk += modifier.value || 0;
         if (modifier.stat === 'DEF') def += modifier.value || 0;
       } else if (modifier.type === 'STAT_REDUCTION') {

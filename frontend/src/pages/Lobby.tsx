@@ -20,6 +20,10 @@ export const Lobby = () => {
         try {
             const game = await apiService.createGame(opponentId);
             dispatch(setGameId(game.gameId));
+
+            // Auto-start for now
+            await apiService.startGame(game.gameId);
+
             navigate('/game');
         } catch (err: any) {
             console.error('Failed to create game:', err);

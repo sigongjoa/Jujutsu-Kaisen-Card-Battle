@@ -128,7 +128,7 @@ export interface CardInstance {
 export interface CardModifier {
   modifierId: string;
   source: string;
-  type: 'STAT_BOOST' | 'STAT_REDUCTION' | 'KEYWORD_GRANT' | 'ABILITY_GRANT';
+  type: 'STAT_BOOST' | 'STAT_REDUCTION' | 'KEYWORD_GRANT' | 'ABILITY_GRANT' | 'MODIFY_STAT';
   stat?: 'ATK' | 'DEF';
   value?: number;
   duration: 'PERMANENT' | 'UNTIL_END_OF_TURN' | 'UNTIL_EOL';

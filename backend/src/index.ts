@@ -27,6 +27,17 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000' }));
 app.use(express.json());
 
+// Logging middleware
+import fs from 'fs';
+import path from 'path';
+
+app.use((req, _res, next) => {
+  const log = `${new Date().toISOString()} ${req.method} ${req.url}\n`;
+  console.log(log.trim());
+  fs.appendFileSync(path.join(__dirname, '../backend.log'), log);
+  next();
+});
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
