@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { CardInstance, CardData } from '../types';
+import { Card } from './card';
 import '../styles/Card.css';
 
 interface CardViewProps {
@@ -55,50 +56,10 @@ export const CardView: React.FC<CardViewProps> = ({
       onMouseLeave={() => setShowTooltip(false)}
       draggable={!!onDragStart}
     >
-      {/* Card Face */}
-      <div className="card-face">
-        <div className="card-header">
-          <h3 className="card-name">{card.name}</h3>
-          <div className="card-cost">{card.cost}</div>
-        </div>
-
-        <div className="card-image-area">[Card Image]</div>
-
-        {card.stats && (
-          <div className="card-stats">
-            <div className="stat atk">{card.stats.atk}</div>
-            <div className="stat def">{card.stats.def}</div>
-          </div>
-        )}
-
-        <div className="card-description">{card.description}</div>
-
-        {card.flavorText && (
-          <div className="card-flavor">{card.flavorText}</div>
-        )}
-
-        {card.keywords && card.keywords.length > 0 && (
-          <div className="card-keywords">
-            {card.keywords.map((keyword) => (
-              <span key={keyword} className="keyword-badge">
-                {keyword}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <Card data={card} />
 
       {/* Tapped Indicator */}
       {instance?.tappedStatus && <div className="tapped-indicator" />}
-
-      {/* Tooltip */}
-      {showTooltip && (
-        <div className="card-tooltip">
-          <div className="tooltip-name">{card.name}</div>
-          <div className="tooltip-type">{card.type}</div>
-          <div className="tooltip-description">{card.description}</div>
-        </div>
-      )}
     </div>
   );
 };
