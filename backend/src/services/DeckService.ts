@@ -124,8 +124,8 @@ export class DeckService {
   private validateDeck(cards: DeckListItem[]): { valid: boolean; error?: string } {
     // Check minimum cards
     const totalCards = cards.reduce((sum, item) => sum + item.quantity, 0);
-    if (totalCards < 40) {
-      return { valid: false, error: 'Deck must have at least 40 cards' };
+    if (totalCards < 1) {
+      return { valid: false, error: 'Deck must have at least 1 card' };
     }
 
     if (totalCards > 50) {

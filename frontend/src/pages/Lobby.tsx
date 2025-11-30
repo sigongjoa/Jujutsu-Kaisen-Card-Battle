@@ -19,7 +19,7 @@ export const Lobby = () => {
         dispatch(setLoading(true));
         try {
             const game = await apiService.createGame(opponentId);
-            dispatch(setGameId(game.id)); // Assuming response has .id
+            dispatch(setGameId(game.gameId));
             navigate('/game');
         } catch (err: any) {
             console.error('Failed to create game:', err);
