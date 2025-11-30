@@ -41,12 +41,12 @@ app.use('/api/deck', deckRoutes);
 app.use('/api/game', gameRoutes);
 
 // Health check
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error'
@@ -60,8 +60,8 @@ server.listen(PORT, () => {
   console.log(`✓ Server running on http://localhost:${PORT}`);
 });
 
-// WebSocket server
-const wss = new WebSocketServer({ port: WS_PORT as number });
+// WebSocket server (initialized but not actively managed in this simple implementation)
+new WebSocketServer({ port: WS_PORT as number });
 
 console.log(`✓ WebSocket server running on ws://localhost:${WS_PORT}`);
 
