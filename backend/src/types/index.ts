@@ -137,7 +137,7 @@ export interface CardModifier {
 
 export interface StatusEffect {
   effectId: string;
-  type: 'STUN' | 'POISON' | 'CURSED_SEAL' | 'WEAKNESS' | 'CUSTOM';
+  type: 'STUN' | 'POISON' | 'CURSED_SEAL' | 'WEAKNESS' | 'EVASION_USED' | 'CUSTOM';
   value?: number;
   duration: number;
   source: string;

@@ -6,17 +6,12 @@ import {
   GameState,
   PlayerGameState,
   GamePhaseType,
-  GamePhase,
   CardInstance,
-  CardData,
-  GameAction,
-  GameActionType,
   CardLocation,
-  EffectPayload,
-  CardAbility,
   TriggerCondition,
   EffectType,
-  StackEntry
+  CardAbility,
+  GameActionType
 } from '../types';
 import { CardService, cardService } from './CardService';
 import { v4 as uuidv4 } from 'uuid';
@@ -136,7 +131,6 @@ export class GameEngine {
       this.endTurn();
     }
 
-    const activePlayer = this.getActivePlayer();
     this.gameState.currentPhase = {
       type: GamePhaseType.RECHARGE,
       step: 0,
@@ -285,7 +279,7 @@ export class GameEngine {
   /**
    * Resolve combat
    */
-  private resolveCombat(attacker_player: PlayerGameState, attacker: CardInstance, targetType: 'PLAYER' | 'CARD', targetCardId?: string): void {
+  private resolveCombat(_attacker_player: PlayerGameState, attacker: CardInstance, targetType: 'PLAYER' | 'CARD', targetCardId?: string): void {
     const defender_player = this.getInactivePlayer();
     const attackerData = this.cardService.getCard(attacker.cardId);
     if (!attackerData) return;
@@ -312,7 +306,7 @@ export class GameEngine {
             damage = 0;
             defender.statusEffects.push({
               effectId: uuidv4(),
-              type: 'EVASION_USED' as any,
+              type: 'EVASION_USED',
               duration: 1,
               source: attacker.cardId
             });
@@ -334,7 +328,7 @@ export class GameEngine {
   /**
    * Apply damage
    */
-  private applyDamage(target: PlayerGameState | CardInstance, amount: number, source: string): void {
+  private applyDamage(target: PlayerGameState | CardInstance, amount: number, _source: string): void {
     if (target instanceof Object && 'currentHp' in target && 'maxHp' in target) {
       // Player damage
       const player = target as PlayerGameState;
