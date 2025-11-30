@@ -5,8 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { updateGameState, setWaitingForOpponent } from '../store/gameSlice';
-import { setCanPlayCards, setCanAttack } from '../store/uiSlice';
+import { updateGameState } from '../store/gameSlice';
+import { setCanPlayCards, setCanAttack, setWaitingForOpponent } from '../store/uiSlice';
 import { GamePhaseType, GameState } from '../types';
 import { apiService } from '../services/api';
 import { wsService } from '../services/websocket';
@@ -93,7 +93,7 @@ export const GameBoard: React.FC = () => {
     dispatch(setWaitingForOpponent(!isActivePlayer));
   }, [gameState?.currentPhase, gameState?.currentPlayerIndex, userId, dispatch]);
 
-  if (!gameLoaded || !gameState) {
+  if (!gameLoaded || !gameState || !userId) {
     return <div className="game-board loading">Loading game...</div>;
   }
 

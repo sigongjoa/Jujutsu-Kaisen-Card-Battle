@@ -4,6 +4,12 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export interface Notification {
+  id: string;
+  message: string;
+  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';
+}
+
 export interface UISliceState {
   selectedCard: string | null;
   selectedTargets: string[];
@@ -14,11 +20,7 @@ export interface UISliceState {
   waitingForOpponent: boolean;
   showHand: boolean;
   showLog: boolean;
-  notification: {
-    id: string;
-    message: string;
-    type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS';
-  } | null;
+  notification: Notification | null;
 }
 
 const initialState: UISliceState = {
@@ -88,7 +90,7 @@ export const uiSlice = createSlice({
       state.showLog = !state.showLog;
     },
 
-    showNotification: (state, action: PayloadAction<Omit<UISliceState['notification'], 'id'>>) => {
+    showNotification: (state, action: PayloadAction<Omit<Notification, 'id'>>) => {
       state.notification = {
         id: Date.now().toString(),
         ...action.payload
