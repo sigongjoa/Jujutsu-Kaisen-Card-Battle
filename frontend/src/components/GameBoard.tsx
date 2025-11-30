@@ -11,6 +11,7 @@ import { GamePhaseType, GameState } from '../types';
 import { apiService } from '../services/api';
 import { wsService } from '../services/websocket';
 import CardView from './CardView';
+import { getCardData } from '../data/cards';
 import '../styles/GameBoard.css';
 
 export const GameBoard: React.FC = () => {
@@ -129,8 +130,12 @@ export const GameBoard: React.FC = () => {
           <div className="deck-counter">{opponent.deck.count} Cards</div>
           <div className="field-cards">
             {opponent.field.map((card) => (
-              <div key={card.cardInstanceId} className="opponent-card">
-                [{card.cardId}]
+              <div key={card.cardInstanceId} className="opponent-card-wrapper">
+                <CardView
+                  card={getCardData(card.cardId)}
+                  instance={card}
+                  scale={0.6}
+                />
               </div>
             ))}
           </div>
@@ -147,8 +152,12 @@ export const GameBoard: React.FC = () => {
       <div className="player-field">
         <div className="field-cards">
           {currentPlayer.field.map((card) => (
-            <div key={card.cardInstanceId} className="player-card">
-              [{card.cardId}]
+            <div key={card.cardInstanceId} className="player-card-wrapper">
+              <CardView
+                card={getCardData(card.cardId)}
+                instance={card}
+                scale={0.7}
+              />
             </div>
           ))}
         </div>
@@ -175,8 +184,12 @@ export const GameBoard: React.FC = () => {
       <div className="hand">
         <div className="hand-cards">
           {currentPlayer.hand.map((card, index) => (
-            <div key={card.cardInstanceId} className="hand-card">
-              [{card.cardId}]
+            <div key={card.cardInstanceId} className="hand-card-wrapper">
+              <CardView
+                card={getCardData(card.cardId)}
+                instance={card}
+                scale={0.8}
+              />
             </div>
           ))}
         </div>
