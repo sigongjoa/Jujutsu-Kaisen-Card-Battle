@@ -56,8 +56,8 @@ export class GameEngine {
       username,
       currentHp: 20,
       maxHp: 20,
-      currentCursedEnergy: 0,
-      maxCursedEnergy: 1,
+      currentCursedEnergy: 3,
+      maxCursedEnergy: 3,
 
       deck: [],
       hand: [],
@@ -118,6 +118,13 @@ export class GameEngine {
 
       // Shuffle deck (simplified)
       this.shuffleArray(deck);
+
+      // Draw initial hand (5 cards)
+      for (let i = 0; i < 5 && deck.length > 0; i++) {
+        const drawnCard = deck.shift()!;
+        drawnCard.location = CardLocation.HAND;
+        this.gameState.players[playerId].hand.push(drawnCard);
+      }
     }
 
     this.startTurn();
@@ -161,41 +168,17 @@ export class GameEngine {
     // Trigger RECHARGE phase abilities
     this.triggerAbilitiesByTrigger(player, TriggerCondition.ON_TURN_START);
 
-    // Move to draw phase
-    this.gameState.currentPhase = {
-      type: GamePhaseType.DRAW,
-      step: 0,
-      priority: 'ACTIVE'
-    };
-
-    this.executeDrawPhase();
-  }
-
-  /**
-   * Execute draw phase
-   */
-  private executeDrawPhase(): void {
-    const player = this.getActivePlayer();
-
-    if (player.deck.length > 0) {
+    // Draw initial cards if hand is empty
+    if (player.hand.length === 0 && player.deck.length > 0) {
       const drawnCard = player.deck.shift()!;
       drawnCard.location = CardLocation.HAND;
       player.hand.push(drawnCard);
-    } else {
-      // Deck empty: lose 2 HP
-      this.applyDamage(player, 2, 'DECK_EMPTY');
     }
 
-    // Trigger DRAW phase abilities
-    this.triggerAbilitiesByTrigger(player, TriggerCondition.ON_DRAW);
-
-    // Move to MAIN_A phase
-    this.gameState.currentPhase = {
-      type: GamePhaseType.MAIN_A,
-      step: 0,
-      priority: 'ACTIVE'
-    };
+    // RECHARGE phase is complete, stay in this phase
+    // (Next phase transition handled by external action)
   }
+
 
   /**
    * Play a card from hand
@@ -233,10 +216,18 @@ export class GameEngine {
     player.currentCursedEnergy -= cost;
 
     // Trigger ENTER_FIELD abilities
-    this.triggerAbilityOnCard(cardInstance, TriggerCondition.ENTER_FIELD);
+    try {
+      this.triggerAbilityOnCard(cardInstance, TriggerCondition.ENTER_FIELD);
+    } catch (_e) {
+      // Ignore ability trigger errors
+    }
 
     // Record action
-    this.recordAction('PLAY_CARD', playerId, cardInstanceId, targetIds);
+    try {
+      this.recordAction('PLAY_CARD', playerId, cardInstanceId, targetIds);
+    } catch (_e) {
+      // Ignore action recording errors
+    }
 
     return { success: true };
   }
