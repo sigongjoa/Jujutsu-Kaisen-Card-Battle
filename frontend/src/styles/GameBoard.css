@@ -1,12 +1,15 @@
+/* Game Board Layout */
 .game-board {
   display: grid;
   grid-template-rows: 1fr 80px 1fr 100px 80px;
   height: 100vh;
-  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+  background: none;
+  /* Remove gradient to show background image */
   color: #fff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   padding: 10px;
   gap: 10px;
+  position: relative;
 }
 
 .game-board.loading,
@@ -15,239 +18,327 @@
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  z-index: 100;
 }
 
-/* Opponent Area */
-.opponent-area {
-  display: grid;
-  grid-template-rows: 60px 1fr;
-  background: rgba(20, 20, 30, 0.8);
-  border: 2px solid #444;
-  border-radius: 8px;
-  padding: 10px;
-  gap: 10px;
-}
-
-/* Player Info */
-.player-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background: rgba(30, 30, 50, 0.9);
-  border-radius: 6px;
-  border: 1px solid #555;
-}
-
-.player-info h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.health-bar {
-  flex: 1;
-  height: 25px;
-  background: #222;
-  border: 1px solid #666;
-  border-radius: 3px;
-  margin: 0 15px;
-  position: relative;
-  min-width: 150px;
-}
-
-.health-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4CAF50, #45a049);
-  transition: width 0.3s ease;
-  border-radius: 2px;
-}
-
-.health-text {
+/* Layer 1: Background */
+.layer-background {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: bold;
-  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-image set via inline style in component */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
 }
 
-.cursed-energy {
-  margin-left: 15px;
-  padding: 5px 10px;
-  background: rgba(100, 150, 255, 0.3);
-  border-radius: 4px;
-  border: 1px solid #6496ff;
-  font-size: 14px;
+/* Layer 2: Arena Lines */
+.layer-arena {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  /* Let clicks pass through */
 }
 
-/* Fields */
-.opponent-field,
-.player-field {
-  background: rgba(20, 20, 30, 0.6);
-  border: 1px dashed #666;
-  border-radius: 6px;
-  padding: 10px;
+.arena-overlay {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: screen;
+  /* Key technique: make black transparent */
+  animation: pulse-arena 4s infinite ease-in-out;
+}
+
+@keyframes pulse-arena {
+  0% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1.0;
+  }
+
+  100% {
+    opacity: 0.8;
+  }
+}
+
+/* Layer 3: Game Content (Field, Hand, Center) */
+.layer-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display: grid;
+  grid-template-rows: 1fr 100px 1fr 180px;
+  /* Opponent Field, Center, Player Field, Hand */
+  padding: 80px 20px 20px 20px;
+  /* Top padding for HUD */
+  box-sizing: border-box;
+}
+
+/* Field Areas */
+.field-area {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
-}
-
-.deck-counter {
-  padding: 5px 10px;
-  background: rgba(100, 100, 100, 0.5);
-  border-radius: 4px;
-  font-size: 13px;
-  min-width: 80px;
+  /* border: 1px dashed rgba(255, 255, 255, 0.2); Debugging aid, remove later */
 }
 
 .field-cards {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.opponent-card,
-.player-card {
-  width: 80px;
-  height: 110px;
-  background: linear-gradient(135deg, #4a4a6a, #2a2a4a);
-  border: 2px solid #777;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
+  gap: 15px;
   justify-content: center;
-  font-size: 11px;
-  text-align: center;
-  padding: 5px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  align-items: center;
 }
 
-.opponent-card:hover,
-.player-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
+/* Center Area */
+.center-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Phase Indicator */
 .phase-indicator {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  background: rgba(30, 30, 50, 0.9);
-  border-radius: 6px;
-  border: 2px solid #666;
-  gap: 20px;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .phase-badge {
-  background: rgba(255, 100, 100, 0.3);
-  border: 1px solid #ff6464;
-  padding: 8px 15px;
-  border-radius: 4px;
+  font-size: 18px;
   font-weight: bold;
-  font-size: 14px;
+  color: #ff6464;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .turn-counter {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 14px;
   color: #aaa;
 }
 
-/* Hand */
-.hand {
-  display: grid;
-  grid-template-rows: 1fr 25px;
-  background: rgba(20, 20, 30, 0.8);
-  border: 2px solid #444;
-  border-radius: 8px;
-  padding: 10px;
-  gap: 5px;
+/* Hand Area */
+.hand-area {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 20px;
 }
 
 .hand-cards {
   display: flex;
-  gap: 8px;
+  gap: -10px;
+  /* Overlap cards slightly */
   justify-content: center;
   align-items: flex-end;
-  overflow-x: auto;
-  padding: 5px 0;
 }
 
-.hand-card {
-  width: 90px;
+.card-wrapper {
+  position: relative;
+  transition: transform 0.2s ease, z-index 0s;
+}
+
+.hand-card-wrapper:hover {
+  transform: translateY(-30px) scale(1.1);
+  z-index: 100;
+  /* Bring to front on hover */
+}
+
+/* VFX: Active Card Glow */
+.active-card-glow {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  mix-blend-mode: lighten;
+  /* make black background transparent */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.hand-card-wrapper:hover .active-card-glow {
+  opacity: 1;
+}
+
+/* Layer 4: HUD */
+.layer-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  pointer-events: none;
+  /* Allow clicks to pass through to game layer */
+}
+
+.hud-frame {
+  position: absolute;
+  width: 400px;
+  /* Adjust based on asset aspect ratio */
   height: 120px;
-  background: linear-gradient(135deg, #5a5a7a, #3a3a5a);
-  border: 2px solid #888;
-  border-radius: 4px;
+  pointer-events: auto;
+  /* Enable interaction with HUD elements if needed */
+}
+
+.opponent-hud {
+  top: 10px;
+  left: 20px;
+}
+
+.player-hud {
+  bottom: 10px;
+  left: 20px;
+}
+
+.hud-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  /* Key: Make black frame transparent */
+}
+
+.hud-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  text-align: center;
-  padding: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
-.hand-card:hover {
-  transform: translateY(-15px) scale(1.1);
-  box-shadow: 0 0 15px rgba(100, 150, 255, 0.6);
-}
-
-.hand-info {
-  text-align: center;
-  font-size: 12px;
-  color: #aaa;
-}
-
-/* Action Buttons */
-.action-buttons {
+.hud-avatar {
+  width: 80px;
+  height: 80px;
+  margin-right: 15px;
   display: flex;
   justify-content: center;
-  gap: 10px;
-  background: rgba(30, 30, 50, 0.9);
-  border: 1px solid #555;
-  border-radius: 6px;
-  padding: 10px;
+  align-items: center;
+}
+
+.avatar-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #333;
+  border: 2px solid #fff;
+}
+
+.hud-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hud-name {
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.hud-hp-bar {
+  width: 200px;
+  height: 15px;
+  background: #333;
+  border: 1px solid #666;
+  border-radius: 3px;
+  position: relative;
+}
+
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #cc0000);
+  transition: width 0.3s ease;
+}
+
+.hp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 0 2px #000;
+}
+
+.hud-ce {
+  font-size: 14px;
+  color: #4da6ff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 100, 255, 0.5);
+}
+
+.hud-actions {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
 }
 
 .btn {
-  padding: 10px 20px;
-  font-size: 14px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  font-weight: bold;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-}
-
-.btn:active {
-  transform: translateY(0);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .btn-pass {
-  background: rgba(100, 150, 200, 0.7);
-  color: #fff;
+  background: linear-gradient(to bottom, #4da6ff, #0066cc);
+  color: white;
+  border: 1px solid #80bfff;
 }
 
 .btn-pass:hover {
-  background: rgba(100, 150, 200, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(77, 166, 255, 0.6);
 }
 
 .btn-surrender {
-  background: rgba(200, 50, 50, 0.7);
-  color: #fff;
+  background: linear-gradient(to bottom, #ff4d4d, #cc0000);
+  color: white;
+  border: 1px solid #ff8080;
 }
 
 .btn-surrender:hover {
-  background: rgba(200, 50, 50, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
 }

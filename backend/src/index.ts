@@ -2,6 +2,7 @@
  * Main server entry point
  */
 
+console.log('!!! SERVER STARTING !!!');
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,24 +20,33 @@ import gameRoutes from './routes/game';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 const WS_PORT = process.env.WS_PORT || 8000;
-
-// Middleware
-app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:3000' }));
-app.use(express.json());
 
 // Logging middleware
 import fs from 'fs';
 import path from 'path';
 
 app.use((req, _res, next) => {
-  const log = `${new Date().toISOString()} ${req.method} ${req.url}\n`;
+  const log = `${new Date().toISOString()} ${req.method} ${req.url}\nHeaders: ${JSON.stringify(req.headers)}\n`;
   console.log(log.trim());
-  fs.appendFileSync(path.join(__dirname, '../backend.log'), log);
+  try {
+    fs.appendFileSync(path.join(__dirname, '../backend.log'), log);
+  } catch (e) {
+    console.error('Failed to write to log file', e);
+  }
   next();
 });
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: true, // Allow any origin
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
 
 // Rate limiting
 const limiter = rateLimit({

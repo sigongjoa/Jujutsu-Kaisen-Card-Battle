@@ -1,4 +1,3 @@
-export * from './Login';
-export * from './Dashboard';
-export * from './Lobby';
-export * from './Decks';
+export { Login } from './Login';
+export { Dashboard } from './Dashboard';
+export { Decks } from './Decks';

@@ -1,0 +1,128 @@
+/// <reference types="jest" />
+/// <reference types="@testing-library/jest-dom" />
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from '../store/authSlice';
+import { Login } from './Login';
+import { apiService } from '../services/api';
+
+// Mock API Service
+jest.mock('../services/api');
+
+// Mock Store
+const createMockStore = () => configureStore({
+    reducer: {
+        auth: authReducer
+    }
+});
+
+const renderWithProviders = (component: React.ReactElement) => {
+    const store = createMockStore();
+    return render(
+        <Provider store={store}>
+            <BrowserRouter>
+                {component}
+            </BrowserRouter>
+        </Provider>
+    );
+};
+
+describe('Login Page Unit Tests', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    test('UC-01: Renders Login Page with all layers', () => {
+        console.log('TEST: Starting UC-01');
+        const { container } = renderWithProviders(<Login />);
+
+        // Check Layers
+        expect(container.querySelector('.layer-background')).toBeInTheDocument();
+        expect(container.querySelector('.layer-modal-frame')).toBeInTheDocument();
+        expect(container.querySelector('.layer-interactive')).toBeInTheDocument();
+        expect(container.querySelector('.layer-vfx')).toBeInTheDocument();
+
+        // Check UI Elements
+        // Placeholder is "Username / Email"
+        expect(screen.getByPlaceholderText(/Username/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Password/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /LOGIN/i })).toBeInTheDocument();
+        console.log('TEST: UC-01 Passed');
+    });
+
+    test('UC-02: Switches between Login and Register modes', () => {
+        console.log('TEST: Starting UC-02');
+        renderWithProviders(<Login />);
+
+        // Initially Login mode
+        expect(screen.getByRole('button', { name: /LOGIN/i })).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Email')).not.toBeInTheDocument();
+
+        // Switch to Register
+        console.log('TEST: Clicking Create Account');
+        fireEvent.click(screen.getByText(/Create Account/i));
+
+        // Now Register mode
+        expect(screen.getByRole('button', { name: /REGISTER/i })).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
+
+        // Switch back
+        console.log('TEST: Clicking Back to Login');
+        fireEvent.click(screen.getByText(/Back to Login/i));
+        expect(screen.getByRole('button', { name: /LOGIN/i })).toBeInTheDocument();
+        console.log('TEST: UC-02 Passed');
+    });
+
+    test('UC-03: Handles Login Submission', async () => {
+        console.log('TEST: Starting UC-03');
+        (apiService.login as jest.Mock).mockResolvedValue({
+            user: { id: '1', username: 'testuser' },
+            token: 'fake-token'
+        });
+
+        renderWithProviders(<Login />);
+
+        fireEvent.change(screen.getByPlaceholderText(/Username/i), { target: { value: 'testuser' } });
+        fireEvent.change(screen.getByPlaceholderText(/Password/i), { target: { value: 'password123' } });
+
+        console.log('TEST: Clicking Login Button');
+        fireEvent.click(screen.getByRole('button', { name: /LOGIN/i }));
+
+        await waitFor(() => {
+            expect(apiService.login).toHaveBeenCalledWith('testuser', 'password123');
+        });
+        console.log('TEST: UC-03 Passed');
+    });
+
+    test('UC-04: Displays Error on Login Failure', async () => {
+        console.log('TEST: Starting UC-04');
+        // Mock rejected value needs to match what the component expects
+        // Component uses: err.response?.data?.message
+        const errorResponse = {
+            response: {
+                data: {
+                    message: 'Invalid credentials'
+                }
+            }
+        };
+        (apiService.login as jest.Mock).mockRejectedValue(errorResponse);
+
+        renderWithProviders(<Login />);
+
+        fireEvent.change(screen.getByPlaceholderText(/Username/i), { target: { value: 'wrong' } });
+        fireEvent.change(screen.getByPlaceholderText(/Password/i), { target: { value: 'wrong' } });
+
+        console.log('TEST: Clicking Login Button (Failure Case)');
+        fireEvent.click(screen.getByRole('button', { name: /LOGIN/i }));
+
+        console.log('TEST: Waiting for error message');
+        // Use regex and findByText which waits automatically
+        const errorMessage = await screen.findByText(/Invalid credentials/i);
+        expect(errorMessage).toBeInTheDocument();
+        console.log('TEST: UC-04 Passed');
+    });
+});

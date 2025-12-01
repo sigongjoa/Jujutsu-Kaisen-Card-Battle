@@ -129,32 +129,59 @@ export const GameBoard: React.FC = () => {
     return <div className="game-board error">Game state error</div>;
   }
 
+  const handleCardClick = async (cardInstanceId: string) => {
+    if (!gameId || !userId) return;
+
+    // Simple play logic for now: click to play
+    // In real game, we'd select, then choose targets
+    try {
+      console.log('Playing card:', cardInstanceId);
+      const newState = await apiService.playCard(gameId, cardInstanceId);
+      dispatch(updateGameState(newState));
+    } catch (error) {
+      console.error('Failed to play card:', error);
+      alert('Failed to play card');
+    }
+  };
+
+  const handlePass = async () => {
+    if (!gameId) return;
+    try {
+      const newState = await apiService.passAction(gameId);
+      dispatch(updateGameState(newState));
+    } catch (error) {
+      console.error('Failed to pass:', error);
+    }
+  };
+
+  const handleSurrender = async () => {
+    if (!gameId) return;
+    try {
+      const newState = await apiService.surrender(gameId);
+      dispatch(updateGameState(newState));
+    } catch (error) {
+      console.error('Failed to surrender:', error);
+    }
+  };
+
   return (
     <div className="game-board">
-      {/* Opponent Info */}
-      <div className="opponent-area">
-        <div className="player-info opponent">
-          <h2>{opponent.username}</h2>
-          <div className="health-bar">
-            <div
-              className="health-fill"
-              style={{ width: `${(opponent.currentHp / opponent.maxHp) * 100}%` }}
-            />
-            <span className="health-text">
-              {opponent.currentHp} / {opponent.maxHp}
-            </span>
-          </div>
-          <div className="cursed-energy">
-            CE: {opponent.currentCursedEnergy} / {opponent.maxCursedEnergy}
-          </div>
-        </div>
+      {/* Layer 1: Background */}
+      <div className="layer-background" style={{ backgroundImage: "url('/assets/play_scene/bg.jpg')" }} />
 
-        {/* Opponent Field */}
-        <div className="opponent-field">
-          <div className="deck-counter">{opponent.deck.count} Cards</div>
+
+      {/* Layer 2: Arena Lines */}
+      <div className="layer-arena">
+        <div className="arena-overlay" style={{ backgroundImage: "url('/assets/play_scene/arena_lines_overlay.jpg')" }} />
+      </div>
+
+      {/* Layer 3: Game Objects (Field & Hand) */}
+      <div className="layer-content">
+        {/* Opponent Field Area */}
+        <div className="field-area opponent-field-area">
           <div className="field-cards">
             {opponent.field.map((card) => (
-              <div key={card.cardInstanceId} className="opponent-card-wrapper">
+              <div key={card.cardInstanceId} className="card-wrapper">
                 <CardView
                   card={getCardData(card.cardId)}
                   instance={card}
@@ -164,76 +191,98 @@ export const GameBoard: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Center Area (Phase & Turn) */}
+        <div className="center-area">
+          <div className="phase-indicator">
+            <div className="phase-badge">{gameState.currentPhase.type}</div>
+            <div className="turn-counter">Turn {gameState.currentTurn}</div>
+          </div>
+        </div>
+
+        {/* Player Field Area */}
+        <div className="field-area player-field-area">
+          <div className="field-cards">
+            {currentPlayer.field.map((card) => (
+              <div key={card.cardInstanceId} className="card-wrapper">
+                <CardView
+                  card={getCardData(card.cardId)}
+                  instance={card}
+                  scale={0.7}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Player Hand Area */}
+        <div className="hand-area">
+          <div className="hand-cards">
+            {currentPlayer.hand.map((card) => (
+              <div key={card.cardInstanceId} className="card-wrapper hand-card-wrapper">
+                <CardView
+                  card={getCardData(card.cardId)}
+                  instance={card}
+                  scale={0.8}
+                  onClick={() => handleCardClick(card.cardInstanceId)}
+                />
+                {/* VFX: Active Card Glow */}
+                <div className="active-card-glow" style={{ backgroundImage: "url('/assets/play_scene/active_card_glow.jpg')" }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Phase Indicator */}
-      <div className="phase-indicator">
-        <div className="phase-badge">{gameState.currentPhase.type}</div>
-        <div className="turn-counter">Turn {gameState.currentTurn}</div>
-      </div>
-
-      {/* Player Field */}
-      <div className="player-field">
-        <div className="field-cards">
-          {currentPlayer.field.map((card) => (
-            <div key={card.cardInstanceId} className="player-card-wrapper">
-              <CardView
-                card={getCardData(card.cardId)}
-                instance={card}
-                scale={0.7}
-              />
+      {/* Layer 4: HUD (Player Info Frames) */}
+      <div className="layer-hud">
+        {/* Opponent HUD */}
+        <div className="hud-frame opponent-hud">
+          <div className="hud-bg" style={{ backgroundImage: "url('/assets/play_scene/frame_player_info.jpg')" }} />
+          <div className="hud-content">
+            <div className="hud-avatar">
+              {/* Placeholder for Avatar */}
+              <div className="avatar-circle" />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Player Info */}
-      <div className="player-info self">
-        <h2>{currentPlayer.username}</h2>
-        <div className="health-bar">
-          <div
-            className="health-fill"
-            style={{ width: `${(currentPlayer.currentHp / currentPlayer.maxHp) * 100}%` }}
-          />
-          <span className="health-text">
-            {currentPlayer.currentHp} / {currentPlayer.maxHp}
-          </span>
-        </div>
-        <div className="cursed-energy">
-          CE: {currentPlayer.currentCursedEnergy} / {currentPlayer.maxCursedEnergy}
-        </div>
-      </div>
-
-      {/* Hand */}
-      <div className="hand">
-        <div className="hand-cards">
-          {currentPlayer.hand.map((card, index) => (
-            <div key={card.cardInstanceId} className="hand-card-wrapper">
-              <CardView
-                card={getCardData(card.cardId)}
-                instance={card}
-                scale={0.8}
-              />
+            <div className="hud-stats">
+              <div className="hud-name">{opponent.username}</div>
+              <div className="hud-hp-bar">
+                <div className="hp-fill" style={{ width: `${(opponent.currentHp / opponent.maxHp) * 100}%` }} />
+                <span className="hp-text">{opponent.currentHp}/{opponent.maxHp}</span>
+              </div>
+              <div className="hud-ce">
+                CE: {opponent.currentCursedEnergy}/{opponent.maxCursedEnergy}
+              </div>
             </div>
-          ))}
+          </div>
         </div>
-        <div className="hand-info">{currentPlayer.hand.length} / 10 cards</div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="action-buttons">
-        <button
-          onClick={() => wsService.send('PASS', {})}
-          className="btn btn-pass"
-        >
-          Pass
-        </button>
-        <button
-          onClick={() => wsService.send('SURRENDER', {})}
-          className="btn btn-surrender"
-        >
-          Surrender
-        </button>
+        {/* Player HUD */}
+        <div className="hud-frame player-hud">
+          <div className="hud-bg" style={{ backgroundImage: "url('/assets/play_scene/frame_player_info.jpg')" }} />
+          <div className="hud-content">
+            <div className="hud-avatar">
+              {/* Placeholder for Avatar */}
+              <div className="avatar-circle" />
+            </div>
+            <div className="hud-stats">
+              <div className="hud-name">{currentPlayer.username}</div>
+              <div className="hud-hp-bar">
+                <div className="hp-fill" style={{ width: `${(currentPlayer.currentHp / currentPlayer.maxHp) * 100}%` }} />
+                <span className="hp-text">{currentPlayer.currentHp}/{currentPlayer.maxHp}</span>
+              </div>
+              <div className="hud-ce">
+                CE: {currentPlayer.currentCursedEnergy}/{currentPlayer.maxCursedEnergy}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons (Overlay on HUD layer) */}
+        <div className="hud-actions">
+          <button onClick={handlePass} className="btn btn-pass">Pass</button>
+          <button onClick={handleSurrender} className="btn btn-surrender">Surrender</button>
+        </div>
       </div>
     </div>
   );

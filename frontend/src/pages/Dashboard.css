@@ -1,0 +1,96 @@
+.dashboard-page {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Noto Sans KR', sans-serif;
+    /* 주술적인 느낌의 폰트가 있다면 변경 */
+}
+
+/* Layer 1: Background */
+.dashboard-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+}
+
+.dashboard-logo {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    z-index: 20;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+/* Layer 2: Menu Container */
+.dashboard-menu-container {
+    position: relative;
+    width: 500px;
+    height: 700px;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    gap: 20px;
+}
+
+/* Layer 3: Menu Button */
+/* Reusing menu-button classes as they are generic enough, or we can scope them if needed */
+.menu-button {
+    position: relative;
+    width: 320px;
+    height: 80px;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    /* For Link components */
+    color: white;
+}
+
+.menu-button:hover {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+}
+
+.menu-button-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.menu-button-icon {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.menu-button-label {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}

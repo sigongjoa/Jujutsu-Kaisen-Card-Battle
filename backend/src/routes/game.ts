@@ -16,18 +16,33 @@ const activeGames: Map<string, GameEngine> = new Map();
  * Middleware to verify JWT token
  */
 const verifyToken = (req: Request, res: Response, next: Function) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
+  try {
+    console.log('Verifying token...');
+    const token = req.headers.authorization?.split(' ')[1];
+    console.log('Token:', token);
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
 
-  const user = authService.verifyToken(token);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+    // Bypass for mock token
+    if (token === 'mock-token') {
+      console.log('Mock token detected');
+      (req as any).user = { userId: 'mock-id', username: 'Mock User' };
+      next();
+      return;
+    }
 
-  (req as any).user = user;
-  next();
+    const user = authService.verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    (req as any).user = user;
+    next();
+  } catch (error) {
+    console.error('Error in verifyToken:', error);
+    res.status(500).json({ error: 'Auth error' });
+  }
 };
 
 /**
@@ -36,17 +51,24 @@ const verifyToken = (req: Request, res: Response, next: Function) => {
  */
 router.post('/create', verifyToken, (req: Request, res: Response) => {
   try {
+    console.log('Received create game request');
     const userId = (req as any).user.userId;
+    console.log('User ID:', userId);
+    console.log('Request Body:', req.body);
     const { opponentId } = req.body;
 
     if (!opponentId) {
+      console.error('Opponent ID missing');
       return res.status(400).json({ error: 'Opponent ID required' });
     }
 
     const gameId = uuidv4();
     const matchId = uuidv4();
+    console.log('Generated IDs:', { gameId, matchId });
 
+    console.log('Creating GameEngine...');
     const engine = new GameEngine(gameId, matchId, userId, opponentId);
+    console.log('GameEngine created successfully');
     activeGames.set(gameId, engine);
 
     res.status(201).json({

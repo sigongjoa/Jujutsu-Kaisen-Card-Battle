@@ -234,8 +234,12 @@ export class GameEngine {
       console.log(`DEBUG: Player ${player.playerId} drew a card. Hand size: ${player.hand.length}`);
     }
 
-    // RECHARGE phase is complete, stay in this phase
-    // (Next phase transition handled by external action)
+    // RECHARGE phase is complete, transition to MAIN_A
+    this.gameState.currentPhase = {
+      type: GamePhaseType.MAIN_A,
+      step: 0,
+      priority: 'ACTIVE'
+    };
   }
 
 
@@ -246,6 +250,11 @@ export class GameEngine {
     const player = this.gameState.players[playerId];
     if (!player) {
       return { success: false, error: 'PLAYER_NOT_FOUND' };
+    }
+
+    // Check phase
+    if (this.gameState.currentPhase.type !== GamePhaseType.MAIN_A && this.gameState.currentPhase.type !== GamePhaseType.MAIN_B) {
+      return { success: false, error: 'WRONG_PHASE' };
     }
 
     // Find card in hand
@@ -301,6 +310,10 @@ export class GameEngine {
     const player = this.gameState.players[playerId];
     if (!player) {
       return { success: false, error: 'PLAYER_NOT_FOUND' };
+    }
+
+    if (this.gameState.currentPhase.type !== GamePhaseType.BATTLE) {
+      return { success: false, error: 'WRONG_PHASE' };
     }
 
     for (const attack of attacks) {
@@ -444,11 +457,28 @@ export class GameEngine {
   passAction(playerId: string): void {
     this.recordAction('PASS', playerId);
 
-    // Simple pass logic: if active player passes, end turn
-    // In real game, priority passes back and forth.
-    // For this simplified engine, passing ends the turn.
-    if (playerId === this.getActivePlayer().playerId) {
-      this.endTurn();
+    if (playerId !== this.getActivePlayer().playerId) {
+      return;
+    }
+
+    const currentPhase = this.gameState.currentPhase.type;
+
+    switch (currentPhase) {
+      case GamePhaseType.RECHARGE:
+        this.gameState.currentPhase.type = GamePhaseType.MAIN_A;
+        break;
+      case GamePhaseType.MAIN_A:
+        this.gameState.currentPhase.type = GamePhaseType.BATTLE;
+        break;
+      case GamePhaseType.BATTLE:
+        this.gameState.currentPhase.type = GamePhaseType.MAIN_B;
+        break;
+      case GamePhaseType.MAIN_B:
+        this.endTurn();
+        break;
+      default:
+        this.endTurn();
+        break;
     }
   }
 
