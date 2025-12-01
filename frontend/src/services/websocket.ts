@@ -34,8 +34,12 @@ export class WebSocketService {
 
         this.ws.onopen = () => {
           console.log('WebSocket connected');
+          if (this.reconnectAttempts > 0) {
+            this.emit('reconnected', { type: 'reconnected', data: {}, timestamp: Date.now() });
+          } else {
+            this.emit('connected', { type: 'connected', data: {}, timestamp: Date.now() });
+          }
           this.reconnectAttempts = 0;
-          this.emit('connected', { type: 'connected', data: {}, timestamp: Date.now() });
           resolve();
         };
 

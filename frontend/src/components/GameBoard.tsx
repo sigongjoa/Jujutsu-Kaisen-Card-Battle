@@ -5,7 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { updateGameState } from '../store/gameSlice';
+import { updateGameState, optimisticPlayCard, rollbackGameState, updatePhase } from '../store/gameSlice';
+
 import { setCanPlayCards, setCanAttack, setWaitingForOpponent } from '../store/uiSlice';
 import { GamePhaseType, GameState } from '../types';
 import { apiService } from '../services/api';
@@ -21,7 +22,6 @@ export const GameBoard: React.FC = () => {
   const userId = useSelector((state: RootState) => state.auth.user?.userId);
 
   const [gameLoaded, setGameLoaded] = useState(false);
-
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,42 +34,37 @@ export const GameBoard: React.FC = () => {
       return;
     }
 
-    // Load initial game state
     const loadGame = async () => {
       try {
         console.log('Fetching game state for:', gameId);
         const state = await apiService.getGame(gameId);
-        console.log('Game state received:', state);
-
         dispatch(updateGameState(state));
-        console.log('Game state dispatched');
-
         setGameLoaded(true);
-        console.log('Game loaded set to true');
 
-        // Connect WebSocket
         try {
           const token = localStorage.getItem('token');
           if (token) {
-            console.log('Connecting WebSocket...');
             await wsService.connect(gameId, token);
-            console.log('WebSocket connected');
 
-            // Listen for game state updates
-            wsService.on('GAME_STATE_UPDATE', (message) => {
-              console.log('WS: Game State Update', message.data);
+            const unsubs: (() => void)[] = [];
+
+            unsubs.push(wsService.on('GAME_STATE_UPDATE', (message) => {
               dispatch(updateGameState(message.data));
-            });
+            }));
 
-            // Listen for phase changes
-            wsService.on('PHASE_CHANGE', (message) => {
-              console.log('WS: Phase Change', message.data);
-              // Update phase in game state
-              if (gameState) {
-                const updated = { ...gameState, currentPhase: message.data };
-                dispatch(updateGameState(updated));
-              }
-            });
+            unsubs.push(wsService.on('PHASE_CHANGE', (message) => {
+              dispatch(updatePhase(message.data));
+            }));
+
+            unsubs.push(wsService.on('reconnected', async () => {
+              console.log('WS: Reconnected, hydrating state...');
+              const updatedState = await apiService.getGame(gameId);
+              dispatch(updateGameState(updatedState));
+            }));
+
+            return () => {
+              unsubs.forEach(unsub => unsub());
+            };
           }
         } catch (wsError) {
           console.error('WebSocket connection error:', wsError);
@@ -80,18 +75,18 @@ export const GameBoard: React.FC = () => {
       }
     };
 
-    loadGame();
+    const cleanupPromise = loadGame();
 
     return () => {
+      cleanupPromise.then(cleanup => cleanup && cleanup());
       wsService.disconnect();
     };
   }, [gameId, userId, dispatch]);
 
-  // Update UI based on phase
   useEffect(() => {
     if (!gameState || !userId) return;
 
-    const isActivePlayer = gameState.currentPlayerIndex === 0; // Simplified
+    const isActivePlayer = gameState.currentPlayerIndex === 0;
 
     switch (gameState.currentPhase.type) {
       case GamePhaseType.MAIN_A:
@@ -99,12 +94,10 @@ export const GameBoard: React.FC = () => {
         dispatch(setCanPlayCards(isActivePlayer));
         dispatch(setCanAttack(false));
         break;
-
       case GamePhaseType.BATTLE:
         dispatch(setCanPlayCards(false));
         dispatch(setCanAttack(isActivePlayer));
         break;
-
       default:
         dispatch(setCanPlayCards(false));
         dispatch(setCanAttack(false));
@@ -132,14 +125,17 @@ export const GameBoard: React.FC = () => {
   const handleCardClick = async (cardInstanceId: string) => {
     if (!gameId || !userId) return;
 
-    // Simple play logic for now: click to play
-    // In real game, we'd select, then choose targets
+    // Optimistic UI: Move card immediately
+    dispatch(optimisticPlayCard({ cardInstanceId, userId }));
+
     try {
       console.log('Playing card:', cardInstanceId);
       const newState = await apiService.playCard(gameId, cardInstanceId);
       dispatch(updateGameState(newState));
     } catch (error) {
       console.error('Failed to play card:', error);
+      // Rollback on failure
+      dispatch(rollbackGameState());
       alert('Failed to play card');
     }
   };

@@ -1,11 +1,8 @@
-/**
- * Card component for displaying individual cards
- */
-
 import React, { useState } from 'react';
 import { CardInstance, CardData } from '../types';
 import { Card } from './card';
 import '../styles/Card.css';
+import { motion } from 'framer-motion';
 
 interface CardViewProps {
   card: CardData;
@@ -46,21 +43,24 @@ export const CardView: React.FC<CardViewProps> = ({
     .join(' ');
 
   return (
-    <div
+    <motion.div
       className={cardClassName}
       style={{ transform: `scale(${scale})` }}
       onClick={handleClick}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={onDragStart as any}
+      onDragEnd={onDragEnd as any}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
       draggable={!!onDragStart}
+      initial={{ scale: 1.5, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <Card data={card} />
 
       {/* Tapped Indicator */}
       {instance?.tappedStatus && <div className="tapped-indicator" />}
-    </div>
+    </motion.div>
   );
 };
 
