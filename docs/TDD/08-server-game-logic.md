@@ -292,130 +292,103 @@ TOTAL TURN TIME: 10-20 seconds (configurable)
                [Go to opponent's RECHARGE]
 ```
 
-### 3.3 Turn Processing Algorithm
+### 3.3 Turn Processing (Event-Driven State Machine)
 
-```python
-def process_turn(game_state, active_player_id):
-    """
-    Main turn processing loop.
-    Returns: Updated game_state or error
-    """
-    game = game_state
+**CRITICAL ARCHITECTURE CHANGE**: The server MUST NOT use blocking loops (e.g., `while True`, `sleep`). Node.js is single-threaded. All logic must be event-driven.
 
-    # === RECHARGE PHASE ===
-    game.current_phase = GamePhase('RECHARGE', 0)
-    player = game.players[active_player_id]
+#### 3.3.1 State Machine Structure
 
-    # Restore Cursed Energy
-    player.current_cursed_energy = player.max_cursed_energy
+The game engine acts as a State Machine that transitions based on **User Actions** or **Timeouts**.
 
-    # Trigger RECHARGE abilities
-    for card in player.field:
-        if has_ability(card, RECHARGE_TRIGGER):
-            resolve_ability(game, card, RECHARGE_TRIGGER)
+```typescript
+enum GameStateStatus {
+  RECHARGE_PHASE = 'RECHARGE_PHASE',
+  DRAW_PHASE = 'DRAW_PHASE',
+  MAIN_PHASE_IDLE = 'MAIN_PHASE_IDLE',       // Waiting for active player action
+  RESPONSE_WINDOW = 'RESPONSE_WINDOW',       // Waiting for opponent response
+  ATTACK_DECLARATION = 'ATTACK_DECLARATION', // Waiting for attacker
+  BLOCK_DECLARATION = 'BLOCK_DECLARATION',   // Waiting for blocker
+  DAMAGE_RESOLUTION = 'DAMAGE_RESOLUTION',
+  END_PHASE = 'END_PHASE'
+}
 
-    # === DRAW PHASE ===
-    game.current_phase = GamePhase('DRAW', 0)
+class GameEngine {
+  /**
+   * Main Entry Point: Handles incoming actions from clients
+   */
+  public async handleAction(gameId: string, action: GameAction): Promise<void> {
+    const game = await this.loadGame(gameId);
 
-    if len(player.deck) > 0:
-        drawn_card = player.deck.pop(0)
-        player.hand.append(drawn_card)
-        broadcast_event(game, 'CARD_DRAWN', drawn_card)
-    else:
-        # Deck empty: lose 2 HP
-        apply_damage(game, player, 2, source='DECK_EMPTY')
-        broadcast_event(game, 'PLAYER_DECK_EMPTY', player)
+    // 1. Validate Action
+    if (!this.isValidAction(game, action)) {
+      throw new Error('Invalid Action');
+    }
 
-    # Trigger DRAW abilities
-    for card in player.field:
-        if has_ability(card, DRAW_TRIGGER):
-            resolve_ability(game, card, DRAW_TRIGGER)
+    // 2. Process Action based on current State
+    switch (game.status) {
+      case 'MAIN_PHASE_IDLE':
+        await this.handleMainPhaseAction(game, action);
+        break;
+      case 'RESPONSE_WINDOW':
+        await this.handleResponseAction(game, action);
+        break;
+      // ... other states
+    }
 
-    # === MAIN_A PHASE ===
-    game.current_phase = GamePhase('MAIN_A', 0)
-    game.current_priority = 'ACTIVE'
+    // 3. Save State
+    await this.saveGame(game);
+  }
 
-    while True:
-        action = wait_for_player_action(game, active_player_id, timeout=10)
-
-        if action.type == 'PLAY_CARD':
-            result = validate_and_play_card(game, active_player_id, action)
-            if result.success:
-                broadcast_event(game, 'CARD_PLAYED', result.card)
-            else:
-                broadcast_error(game, active_player_id, result.error)
-
-        elif action.type == 'ACTIVATE_ABILITY':
-            result = validate_and_activate(game, active_player_id, action)
-            if result.success:
-                resolve_ability(game, action.card, action.ability)
-                broadcast_event(game, 'ABILITY_ACTIVATED', action)
-            else:
-                broadcast_error(game, active_player_id, result.error)
-
-        elif action.type == 'PASS':
-            break
-
-        elif action.type == 'SURRENDER':
-            return end_game(game, winner=opponent_id(game, active_player_id))
-
-    # === RESPONSE WINDOW (Opponent) ===
-    game.current_priority = 'INACTIVE'
-    opponent_id = get_opponent(game, active_player_id)
-
-    response_window = start_response_window(game, timeout=3)
-
-    if response_window.responses:
-        # Process responses
-        for response in response_window.responses:
-            resolve_response(game, opponent_id, response)
-        # Return to MAIN_A for active player
-        continue_main_a(game, active_player_id)
-
-    # === BATTLE PHASE ===
-    game.current_phase = GamePhase('BATTLE', 0)
-
-    attacks = wait_for_attack_declaration(game, active_player_id)
-    blocks = wait_for_block_declaration(game, opponent_id, attacks)
-
-    for attack in attacks:
-        resolve_combat(game, attack, blocks.get(attack.card_id))
-
-    # === MAIN_B PHASE ===
-    game.current_phase = GamePhase('MAIN_B', 0)
-    # Similar to MAIN_A but cards with MAIN_B restriction only work here
-
-    # === RESPONSE WINDOW (Final) ===
-    final_responses = start_response_window(game, timeout=3)
-    if final_responses.responses:
-        for response in final_responses.responses:
-            resolve_response(game, opponent_id, response)
-
-    # === END PHASE ===
-    game.current_phase = GamePhase('END', 0)
-
-    # Trigger END abilities
-    for card in player.field:
-        if has_ability(card, END_TRIGGER):
-            resolve_ability(game, card, END_TRIGGER)
-
-    # Clear modifiers
-    clear_temporary_modifiers(player)
-
-    # Hand size enforcement
-    if len(player.hand) > 10:
-        # Player must discard down to 10
-        discarded = wait_for_discard(game, active_player_id, len(player.hand) - 10)
-        for card in discarded:
-            move_card(game, card, 'GRAVEYARD')
-
-    # Clear evasion counters
-    for card in opponent.field:
-        card.evasion_used = False
-
-    game.current_turn += 1
-    return game
+  /**
+   * Timer Entry Point: Called when a turn timer expires
+   */
+  public async handleTimeout(gameId: string): Promise<void> {
+    const game = await this.loadGame(gameId);
+    
+    // Auto-pass or Auto-end turn
+    if (game.status === 'RESPONSE_WINDOW') {
+      await this.resolveStack(game); // Auto-pass priority
+    } else {
+      await this.endTurn(game); // Force end turn
+    }
+  }
+}
 ```
+
+#### 3.3.2 Infinite Loop Prevention (Frequency Counting)
+
+To prevent server crashes from infinite loops (e.g., A triggers B, B triggers A), we track effect frequency **per turn**.
+
+```typescript
+interface TurnMetadata {
+  // Map<"CardInstanceId:AbilityId", count>
+  activationCounts: Map<string, number>; 
+}
+
+function checkInfiniteLoop(game: GameState, card: Card, ability: Ability): void {
+  const key = `${card.instanceId}:${ability.abilityId}`;
+  const count = game.turnMetadata.activationCounts.get(key) || 0;
+
+  // LIMIT: Max 10 times per turn for the exact same ability instance
+  if (count >= 10) {
+    throw new Error(`Infinite Loop Detected: ${card.name} has activated ${ability.name} too many times.`);
+  }
+
+  game.turnMetadata.activationCounts.set(key, count + 1);
+}
+```
+
+#### 3.3.3 Realistic Timeouts
+
+Mobile networks are unstable. Timeouts must be generous but strict.
+
+- **Main Phase Action**: **60 seconds** (Warning at 15s remaining)
+- **Response Window**: **15 seconds** (Auto-pass if no action)
+- **Mulligan**: **60 seconds**
+- **Disconnect Grace Period**: **60 seconds** (Game pauses or AI takes over)
+
+*UX Note*: Display a "burning fuse" animation when 10s remain.
+
 
 ## 4. Card Play and Validation
 

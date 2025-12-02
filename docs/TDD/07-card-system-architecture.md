@@ -160,7 +160,11 @@ export interface EffectPayload {
   effectType: EffectType;
   target: EffectTarget;     // 누가 영향을 받는가?
   value: number | string;   // 효과의 강도/내용
-  metadata?: Record<string, any>;
+  // Structured Configuration (No more 'metadata')
+  duration?: 'PERMANENT' | 'THIS_TURN' | 'WHILE_ON_FIELD';
+  statType?: 'atk' | 'hp' | 'cost';
+  conditions?: string[]; // e.g., "TARGET_CANNOT_BLOCK"
+  secondaryEffect?: EffectPayload; // For complex effects like "Damage then Heal"
 }
 
 export type EffectType =
@@ -377,10 +381,8 @@ const yutoKimCard: CardData = {
           count: 1
         },
         value: 2,
-        metadata: {
-          statType: 'atk',
-          duration: 'THIS_TURN'
-        }
+        statType: 'atk',
+        duration: 'THIS_TURN'
       },
       canActivatePerTurn: 1,
       priority: 50
@@ -434,10 +436,7 @@ const daiArashiCard: CardData = {
           count: 1
         },
         value: 3,
-        metadata: {
-          canTargetPlayer: true,
-          conditionForPlayerDamage: 'TARGET_CARD_CANNOT_BLOCK'
-        }
+        conditions: ['REDIRECT_TO_PLAYER_IF_UNBLOCKABLE']
       },
       priority: 100
     }
@@ -487,11 +486,8 @@ const itemCard: CardData = {
           count: 999  // 모든 저주술사
         },
         value: 1,
-        metadata: {
-          statType: 'hp',
-          duration: 'PERMANENT',
-          appliesTo: 'ALL_JUJUTSU_USERS'
-        }
+        statType: 'hp',
+        duration: 'PERMANENT'
       },
       priority: 50
     }

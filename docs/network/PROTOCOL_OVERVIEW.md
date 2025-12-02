@@ -57,3 +57,12 @@ Clients MUST implement the following reconnection logic:
 4.  **Give Up**: After 30s, show "Connection Lost" modal.
 
 **Critical**: Upon reconnection, the client sends `SYNC_REQUEST` with its last processed `sequenceId`. The server replies with a `DELTA_LOG` containing all missed events.
+
+## 5. Game Timeouts
+
+To accommodate mobile network latency and ensure fair play:
+
+- **Turn Timer**: **60 seconds** (Server enforced).
+- **Response Window**: **15 seconds** (Auto-pass if no action).
+- **Grace Period**: If a client disconnects, the game timer pauses for up to **60 seconds** to allow reconnection before auto-forfeit.
+- **Fuse Animation**: The server sends a `TIMER_WARNING` event when 10 seconds remain.

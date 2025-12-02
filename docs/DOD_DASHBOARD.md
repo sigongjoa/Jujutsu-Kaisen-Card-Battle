@@ -1,24 +1,22 @@
-# Definition of Done: Dashboard Page
+# Feature DoD: Production Ready Checklist
 
-## 1. Functional Requirements
-- [ ] **Page Rendering**: The Dashboard page renders correctly with the background, logo, and menu container.
-- [ ] **Menu Buttons**: All 6 menu buttons (Lobby, Decks, Shop, Profile, Settings, Logout) are displayed with correct labels and icons.
-- [ ] **Navigation**:
-    - [ ] Clicking "Decks" navigates to the Decks page (`/decks`).
-    - [ ] Clicking "Logout" logs the user out and redirects to the Login page (`/login`).
-    - [ ] Other buttons (Lobby, Shop, Profile, Settings) have placeholder click handlers (console logs).
+This document defines the **Definition of Done (DoD)** for the Jujutsu Kaisen Card Battle project. A feature is NOT done until it meets these criteria. This checklist ensures that we are not just building a "toy" but a robust, production-ready service.
 
-## 2. Visual & UI/UX
-- [ ] **Assets**: Correct background (`bg.jpg`), frame (`container_frame.jpg`), and button images (`emtpy_btnX.jpg`) are used.
-- [ ] **Styling**: The layout matches the provided reference (centered menu container).
-- [ ] **Interactions**: Buttons have hover effects (scale up, brightness increase).
-- [ ] **Responsiveness**: The layout remains centered and usable on standard desktop resolutions.
+## 📋 Checklist Criteria
 
-## 3. Code Quality
-- [ ] **Component Structure**: `Dashboard` and `MenuButton` are separated components.
-- [ ] **CSS**: Styles are defined in `Dashboard.css` and scoped appropriately.
-- [ ] **Linting**: No lint errors or warnings.
+| Category | Criteria | Notes |
+| :--- | :--- | :--- |
+| **Functionality** | - All requirements defined in the spec are met.<br>- Unit tests for **Edge Cases** (null, boundary values) pass.<br>- **Failure Paths** are tested and handled gracefully. | Happy Path is not enough. |
+| **Observability** | - All critical events (errors, state changes) are logged in **Structured JSON**.<br>- Logs include `trace_id`, `user_id`, and `game_id`.<br>- Business metrics (e.g., card usage) are sent to monitoring (Prometheus/StatsD). | "No Logs, No Merge." |
+| **Resilience** | - Server handles DB/Redis disconnections gracefully (no crash).<br>- External API calls have **Timeouts** and **Retry** policies. | Resilience testing required. |
+| **Performance** | - **Race Conditions** are handled (Data Integrity guaranteed).<br>- Key API Latency is under **200ms (P99)**. | Load test results required. |
+| **Security** | - Strict **Server-Side Validation** for all user payloads.<br>- **Fog of War**: Sensitive data (opponent's hand) is sanitized/masked. | Verify sanitization logic. |
+| **Documentation** | - API Docs (Swagger/OAS) are synced with code.<br>- Operations Guide updated with new error codes/troubleshooting. | Keep docs living. |
 
-## 4. Testing
-- [ ] **Unit Tests**: `Dashboard.test.tsx` passes, covering rendering and basic interactions.
-- [ ] **E2E Tests**: Browser verification confirms visual elements and navigation flows.
+## 🚀 Release Gate
+
+Before deploying to production, verify:
+1.  [ ] All P0/P1 bugs are resolved.
+2.  [ ] CI/CD pipeline passes (Build, Test, Lint).
+3.  [ ] Database migrations are tested and reversible.
+4.  [ ] Feature flags are configured correctly.
